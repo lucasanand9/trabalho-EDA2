@@ -31,3 +31,4 @@ NoB * localizaNoB(ArvB* arvB, int chave);
 NoB * divideNoB(ArvB * arv, NoB * no);
 int transbordoB (ArvB *arvB, NoB *noB);
 void addChaveBRecursivo(ArvB* arvB, NoB* noB, NoB* novo, int chave);
+void removeChave(ArvB* arvB, int chave);

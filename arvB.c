@@ -4,7 +4,6 @@ ArvB * criaArvB(int ordem){
     ArvB *a = malloc(sizeof(ArvB));
     a->ordem = ordem;
     a->raiz = criaNo(a);
-    
     return a;
 }
 
@@ -33,11 +32,10 @@ void percorreArvB(NoB *no, void(visita)(int chave)){
 
 int localizaChave(ArvB * arv, int chave){
     NoB * no = arv->raiz;
-
     while (no != NULL){
         int i  = pesquisaBinaria(no, chave);
 
-        if (i < no->total &&  no->chaves[i] == chave){
+        if (i < no->total && no->chaves[i] == chave){
             return 1; //encontrou
         }else{
             no = no->filhos;
@@ -64,14 +62,12 @@ int pesquisaBinaria(NoB * no, int chave){
 void adicionaChaveNoB(NoB * no, NoB * direita, int chave){
     int i = pesquisaBinaria(no, chave);
 
-    for (int j = no->total -1; j >= i; j++){
+    for (int j = no->total-1; j >= i; j++){
         no->chaves[j+1] = no->chaves[j];
         no->filhos[j+2] = no->filhos[j+1];
     }
-
     no->chaves[i] = chave;
     no->filhos[i+1] = direita;
-
     no->total++;
 }
 
@@ -122,7 +118,7 @@ void addChaveBRecursivo(ArvB* arvB, NoB* noB, NoB* novo, int chave) {
         if (noB->pai == NULL) {
             NoB* raiz = criaNo(arvB);
             raiz->filhos[0] = noB;
-            adicionaChaveNoB(pai, novo, promovido); // pq pai esta dando errado
+            adicionaChaveNoB(noB->pai, novo, promovido); // pq pai esta dando errado
             noB->pai = raiz;
             novo->pai = raiz;
             arvB->raiz = raiz;
