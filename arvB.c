@@ -38,7 +38,7 @@ int localizaChave(ArvB * arv, int chave){
         if (i < no->total && no->chaves[i] == chave){
             return 1; //encontrou
         }else{
-            no = no->filhos;
+            no = no->filhos[i];
         }
     }
     return 0;
@@ -57,6 +57,11 @@ int pesquisaBinaria(NoB * no, int chave){
         }
     }
     return -1; // n encontrou
+}
+
+void adicionaChave(ArvB * arvB, int chave){
+    NoB * no = localizaNoB(arvB, chave);
+    addChaveBRecursivo(arvB, no, NULL, chave);
 }
 
 void adicionaChaveNoB(NoB * no, NoB * direita, int chave){
@@ -110,21 +115,137 @@ NoB * divideNoB(ArvB * arv, NoB * no){
     return novo;
 }
 
-void addChaveBRecursivo(ArvB* arvB, NoB* noB, NoB* novo, int chave) {
-    adicionaChaveNoB(noB, novo, chave);
-    if (transbordoB(arvB, noB)) {
-        int promovido = noB->chaves[arvB->ordem];
-        NoB* novo = divideNo(arvB, noB);
-        if (noB->pai == NULL) {
-            NoB* raiz = criaNo(arvB);
-            raiz->filhos[0] = noB;
-            adicionaChaveNoB(noB->pai, novo, promovido); // pq pai esta dando errado
-            noB->pai = raiz;
+void addChaveBRecursivo(ArvB* arvore, NoB* no, NoB* novo, int chave) {
+   adicionaChaveNoB(no, novo, chave);
+    if (transbordoB(arvore, no)) {
+        int promovido = no->chaves[arvore->ordem];
+        NoB* novo = divideNoB(arvore, no);
+        if (no->pai == NULL) {
+            NoB* raiz = criaNo(arvore);
+            raiz->filhos[0] = no;
+            adicionaChaveNoB(no->pai, novo, promovido); // pq pai esta dando errado
+            no->pai = raiz;
             novo->pai = raiz;
-            arvB->raiz = raiz;
-               
+            arvore->raiz = raiz;
         } else {
-        addChaveBRecursivo(arvB, noB->pai, novo, promovido);
+            addChaveBRecursivo(arvore, no->pai, novo, promovido);
+        }
+    }
+}
+
+
+void removeChave(ArvB* arvB, int chave) {
+    NoB* no = localizaNoB(arvB, chave);
+    if (no == NULL) {
+        return; // Chave não encontrada
+    }
+
+    int idx = pesquisaBinaria(no, chave);
+
+    if (no->filhos[0] == NULL) {
+        // Caso 1: Remoção em nó folha
+        for (int i = idx; i < no->total - 1; i++) {
+            no->chaves[i] = no->chaves[i + 1];
+        }
+        no->total--;
+
+        if (no->pai != NULL && no->total < (arvB->ordem - 1) / 2) {
+            ajustaSubfluxo(arvB, no);
+        }
+    } else {
+        // Caso 2: Remoção em nó interno
+        NoB* predecessor = no->filhos[idx];
+        while (predecessor->filhos[predecessor->total] != NULL) {
+            predecessor = predecessor->filhos[predecessor->total];
+        }
+
+        int chavePredecessor = predecessor->chaves[predecessor->total - 1];
+        no->chaves[idx] = chavePredecessor;
+        removeChave(arvB, chavePredecessor);
+    }
+
+    // Caso 3: Ajuste da raiz se necessário
+    if (arvB->raiz->total == 0) {
+        NoB* antigaRaiz = arvB->raiz;
+        arvB->raiz = arvB->raiz->filhos[0];
+        if (arvB->raiz != NULL) {
+            arvB->raiz->pai = NULL;
+        }
+        free(antigaRaiz);
+    }
+}
+
+void ajustaSubfluxo(ArvB* arvB, NoB* no) {
+    NoB* pai = no->pai;
+    int idxFilho = 0;
+
+    while (pai->filhos[idxFilho] != no) {
+        idxFilho++;
+    }
+
+    NoB* irmaoEsq = (idxFilho > 0) ? pai->filhos[idxFilho - 1] : NULL;
+    NoB* irmaoDir = (idxFilho < pai->total) ? pai->filhos[idxFilho + 1] : NULL;
+
+    if (irmaoEsq != NULL && irmaoEsq->total > (arvB->ordem - 1) / 2) {
+        // Redistribuição: Pegar chave do irmão esquerdo
+        for (int i = no->total; i > 0; i--) {
+            no->chaves[i] = no->chaves[i - 1];
+        }
+        no->chaves[0] = pai->chaves[idxFilho - 1];
+        no->filhos[no->total + 1] = no->filhos[no->total];
+        for (int i = no->total; i > 0; i--) {
+            no->filhos[i] = no->filhos[i - 1];
+        }
+        no->filhos[0] = irmaoEsq->filhos[irmaoEsq->total];
+        pai->chaves[idxFilho - 1] = irmaoEsq->chaves[irmaoEsq->total - 1];
+        irmaoEsq->total--;
+        no->total++;
+    } else if (irmaoDir != NULL && irmaoDir->total > (arvB->ordem - 1) / 2) {
+        // Redistribuição: Pegar chave do irmão direito
+        no->chaves[no->total] = pai->chaves[idxFilho];
+        no->filhos[no->total + 1] = irmaoDir->filhos[0];
+        pai->chaves[idxFilho] = irmaoDir->chaves[0];
+        for (int i = 0; i < irmaoDir->total - 1; i++) {
+            irmaoDir->chaves[i] = irmaoDir->chaves[i + 1];
+            irmaoDir->filhos[i] = irmaoDir->filhos[i + 1];
+        }
+        irmaoDir->filhos[irmaoDir->total - 1] = irmaoDir->filhos[irmaoDir->total];
+        irmaoDir->total--;
+        no->total++;
+    } else {
+        // Fusão com irmão
+        if (irmaoEsq != NULL) {
+            for (int i = 0; i < no->total; i++) {
+                irmaoEsq->chaves[irmaoEsq->total + i] = no->chaves[i];
+                irmaoEsq->filhos[irmaoEsq->total + i + 1] = no->filhos[i];
+            }
+            irmaoEsq->total += no->total;
+            irmaoEsq->filhos[irmaoEsq->total] = no->filhos[no->total];
+            for (int i = idxFilho - 1; i < pai->total - 1; i++) {
+                pai->chaves[i] = pai->chaves[i + 1];
+                pai->filhos[i + 1] = pai->filhos[i + 2];
+            }
+            pai->total--;
+            free(no);
+        } else if (irmaoDir != NULL) {
+            for (int i = 0; i < irmaoDir->total; i++) {
+                no->chaves[no->total + i] = irmaoDir->chaves[i];
+                no->filhos[no->total + i + 1] = irmaoDir->filhos[i];
+            }
+            no->chaves[no->total] = pai->chaves[idxFilho];
+            no->total += irmaoDir->total + 1;
+            for (int i = idxFilho; i < pai->total - 1; i++) {
+                pai->chaves[i] = pai->chaves[i + 1];
+                pai->filhos[i + 1] = pai->filhos[i + 2];
+            }
+            pai->total--;
+            free(irmaoDir);
+        }
+
+        if (pai->pai == NULL && pai->total == 0) {
+            arvB->raiz = no;
+            no->pai = NULL;
+            free(pai);
         }
     }
 }

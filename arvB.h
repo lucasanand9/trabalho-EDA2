@@ -23,7 +23,7 @@ Operacoes:
 
 ArvB * criaArvB(int ordem);
 NoB * criaNo(ArvB *arv);
-void percorreArvB(NoB *no, void(visita)(int chave)); // o qu eesse "void(visita)(int chave)"
+void percorreArvB(NoB *no, void(visita)(int chave)); 
 int localizaChave(ArvB * arv, int chave);
 int pesquisaBinaria(NoB * no, int chave);
 void adicionaChaveNoB(NoB * no, NoB * direita, int chave);
@@ -32,3 +32,5 @@ NoB * divideNoB(ArvB * arv, NoB * no);
 int transbordoB (ArvB *arvB, NoB *noB);
 void addChaveBRecursivo(ArvB* arvB, NoB* noB, NoB* novo, int chave);
 void removeChave(ArvB* arvB, int chave);
+void ajustaSubfluxo(ArvB* arvB, NoB* no);
+void adicionaChave(ArvB * arvB, int chave);
